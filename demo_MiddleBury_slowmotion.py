@@ -7,7 +7,7 @@ import numpy as np
 import numpy
 import networks
 from my_args import  args
-from scipy.misc import imread, imsave
+from PIL import Image
 from AverageMeter import  *
 import shutil
 
@@ -78,9 +78,11 @@ if DO_MiddleBurryOther:
         arguments_strSecond = os.path.join(MB_Other_DATA, dir, "frame11.png")
         gt_path = os.path.join(MB_Other_GT, dir, "frame10i11.png")
 
-        X0 =  torch.from_numpy( np.transpose(imread(arguments_strFirst) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
-        X1 =  torch.from_numpy( np.transpose(imread(arguments_strSecond) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
+        first_image = np.array(Image.open(arguments_strFirst))
+        second_image = np.array(Image.open(arguments_strSecond))
 
+        X0 =  torch.from_numpy( np.transpose(first_image , (2,0,1)).astype("float32")/ 255.0).type(dtype)
+        X1 =  torch.from_numpy( np.transpose(second_image , (2,0,1)).astype("float32")/ 255.0).type(dtype)
 
         y_ = torch.FloatTensor()
 
@@ -178,7 +180,7 @@ if DO_MiddleBurryOther:
         for item, time_offset in zip(y_, time_offsets):
             arguments_strOut = os.path.join(gen_dir, dir, "{:0>4d}.png".format(count))
             count = count + 1
-            imsave(arguments_strOut, np.round(item).astype(numpy.uint8))
+            Image.fromarray(np.round(item).astype(np.uint8)).save(arguments_strOut)
         shutil.copy(arguments_strSecond, os.path.join(gen_dir, dir, "{:0>4d}.png".format(count)))
         count = count + 1
 

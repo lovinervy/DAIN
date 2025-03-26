@@ -232,7 +232,7 @@ int InterpolationLayer_gpu_forward_kernel(
     if(BLOCKDIMX != 32 || BLOCKDIMY != 16||DEBUG)
         printf("BLOCKDIMX revised to %d, BLOCKDIMY revised to %d \n", BLOCKDIMX,BLOCKDIMY);
 	//extract the data of CudaTensor and use kernel to calculate.
-		AT_DISPATCH_FLOATING_TYPES(input1.type(), "DepthFlowProjection_gpu_forward", ([&] {
+		AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "DepthFlowProjection_gpu_forward", ([&] {
 
 	InterpolationLayer_gpu_forward_kernelfunc<<<grid,block,0, stream >>>(
 			nElement, //to let the nummous
@@ -287,7 +287,7 @@ int InterpolationLayer_gpu_backward_kernel(
 	grid = dim3( (w + BLOCKDIMX - 1)/ BLOCKDIMX, (h + BLOCKDIMY - 1) / BLOCKDIMY, batch);
     if(BLOCKDIMX != 32 || BLOCKDIMY != 16||DEBUG)
         printf("BLOCKDIMX revised to %d, BLOCKDIMY revised to %d \n", BLOCKDIMX,BLOCKDIMY);
-	AT_DISPATCH_FLOATING_TYPES(input1.type(), "DepthFlowProjection_gpu_forward", ([&] {
+	AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "DepthFlowProjection_gpu_forward", ([&] {
 	InterpolationLayer_gpu_backward_kernelfunc <<<grid,block,0, stream>>>(
 			nElement, //to let the nummous
 			w,h,channel,

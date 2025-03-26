@@ -329,7 +329,7 @@ int FlowProjection_gpu_forward_kernel(
 //    printf("I am here\n");
 	//extract the data of CudaTensor and use kernel to calculate.
 
-	AT_DISPATCH_FLOATING_TYPES(input1.type(), "FlowProjection_gpu_forward_kernelfunc", ([&] {
+	AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "FlowProjection_gpu_forward_kernelfunc", ([&] {
 	FlowProjection_gpu_forward_kernelfunc<<<grid,block,0, stream >>>(
 			nElement, //to let the nummous
 			w,h,channel,
@@ -347,7 +347,7 @@ int FlowProjection_gpu_forward_kernel(
 		return error;
 	}
 //    printf("I am there\n");
-	AT_DISPATCH_FLOATING_TYPES(input1.type(), "FlowProjectionAveraging_kernelfunc", ([&] {
+	AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "FlowProjectionAveraging_kernelfunc", ([&] {
 
     FlowProjectionAveraging_kernelfunc<<<grid,block,0,stream>>>(
     		nElement, //to let the nummous
@@ -374,7 +374,7 @@ int FlowProjection_gpu_forward_kernel(
     if(fillhole){
 
 //        printf("use flow fill hole\n");
-    	AT_DISPATCH_FLOATING_TYPES(input1.type(), "FlowFillhole_kernelfunc", ([&] {
+    	AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "FlowFillhole_kernelfunc", ([&] {
     FlowFillhole_kernelfunc<<<grid,block,0,stream>>>(
     		nElement, //to let the nummous
 			w,h,channel,
@@ -429,7 +429,7 @@ int FlowProjection_gpu_backward_kernel(
 	grid = dim3( (w + BLOCKDIMX - 1)/ BLOCKDIMX, (h + BLOCKDIMY - 1) / BLOCKDIMY, batch);
     if(BLOCKDIMX != 32 || BLOCKDIMY != 16||DEBUG)
         printf("BLOCKDIMX revised to %d, BLOCKDIMY revised to %d \n", BLOCKDIMX,BLOCKDIMY);
-    	AT_DISPATCH_FLOATING_TYPES(input1.type(), "FlowProjection_gpu_backward_kernelfunc", ([&] {
+    	AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "FlowProjection_gpu_backward_kernelfunc", ([&] {
 	FlowProjection_gpu_backward_kernelfunc <<<grid,block,0, stream>>>(
 			nElement, //to let the nummous
 			w,h,channel,

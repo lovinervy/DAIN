@@ -73,7 +73,7 @@ class PWCDCNet(nn.Module):
         self.leakyRELU = nn.LeakyReLU(0.1)
         
         nd = (2*md+1)**2
-        dd = np.cumsum([128,128,96,64,32],dtype=np.int32).astype(np.int)
+        dd = np.cumsum([128,128,96,64,32],dtype=np.int32).astype(np.int64)
         dd = [int(d) for d in dd]
 
         od = nd

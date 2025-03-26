@@ -203,7 +203,7 @@ int SeparableConvFlowLayer_gpu_forward_kernel(
     if(BLOCKDIMX != 32 || BLOCKDIMY != 16||DEBUG)
         printf("BLOCKDIMX revised to %d, BLOCKDIMY revised to %d \n", BLOCKDIMX,BLOCKDIMY);
 	//extract the data of CudaTensor and use kernel to calculate.
-				AT_DISPATCH_FLOATING_TYPES(input1.type(), "DepthFlowProjection_gpu_backward", ([&] {
+				AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "DepthFlowProjection_gpu_backward", ([&] {
 SeparableConvFlowLayer_gpu_forward_kernelfunc<<<grid,block,0, stream >>>(
 			nElement, //to let the nummous
 			w,h,channel, filter_size,
@@ -265,7 +265,7 @@ int SeparableConvFlowLayer_gpu_backward_kernel(
 //    cudaMemset((void*)gradinput1, 0, input1_b_stride * batch * sizeof(float));
 //    cudaMemset((void*)gradinput2, 0, input2_b_stride * batch * sizeof(float));
 //    cudaMemset((void*)gradinput3, 0, input3_b_stride * batch * sizeof(float));
-			AT_DISPATCH_FLOATING_TYPES(input1.type(), "DepthFlowProjection_gpu_backward", ([&] {
+			AT_DISPATCH_FLOATING_TYPES(input1.scalar_type(), "DepthFlowProjection_gpu_backward", ([&] {
 
 	SeparableConvFlowLayer_gpu_backward_kernelfunc <<<grid,block,0, stream>>>(
 			nElement, //to let the nummous
