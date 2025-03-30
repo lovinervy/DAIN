@@ -57,20 +57,16 @@ class VideoManagement:
 
     def update_keyframes(
         self,
-        output_dir: str,
+        output_file: str,
         progress_bar: Callable[[int, int], None] | None = None,
     ):
         if self.__file_with_updated_keyframes is not None:
             logger.debug("Video with updated keyframes exist")
             return
-
-        os.makedirs(output_dir, exist_ok=True)
-        base_name = os.path.basename(self.__source_file)
-        output_file = os.path.join(output_dir, base_name)
         cmd = (
             f"ffmpeg -i {self.__source_file} -c:v h264_nvenc "
             f"-qp 0 -rc constqp -preset slow -g 150 "
-            f"-forced-idr 1 -c:a copy {output_file}"
+            f"-forced-idr 1 -c:a aac {output_file}"
         )
 
         logger.info(f"Running transcoding with keyframes every 150 frames...")
@@ -164,7 +160,7 @@ class VideoManagement:
         output_pattern = os.path.join(output_dir, "cut_%03d.mp4")
         ffmpeg_cmd = (
             f"ffmpeg -y -i {self.__file_with_updated_keyframes} -c copy -map 0 "
-            f"-f segment -segment_time 99999 -segment_times {segment_times} "
+            f"-f segment -segment_times {segment_times} "
             f"-reset_timestamps 1 {output_pattern}"
         )
         logger.debug(f"Ffmpeg command to split video: {ffmpeg_cmd}")
@@ -180,7 +176,8 @@ class VideoManagement:
             return_code = process.wait()
             if return_code != 0:
                 logger.error("Ffmpeg stop working with error when try splitting video")
-                raise RuntimeError("Ffmpeg stop working with error")
+                text = "" if process.stderr is None else process.stderr.read()
+                raise RuntimeError(f"Ffmpeg stop working with error: {text}")
 
             logger.info(
                 f"Splitting video finished successfully: Files saved in: {output_dir}"
@@ -192,9 +189,12 @@ class VideoManagement:
             logger.exception("Error when splitting video to segments")
             raise
 
-    def video_storyboard(self, frame_path: str, output_dir: str):
+    def video_storyboard(self, segment_path: str, output_dir: str):
         os.makedirs(output_dir, exist_ok=True)
-        cmd = f"ffmpeg -i {frame_path} " f"start_number 0 {output_dir}/frame_%06d.png"
+        cmd = (
+            f"ffmpeg -i {segment_path} "
+            f"-start_number 0 {output_dir}/frame_%06d.png"
+        )
         try:
             result = subprocess.run(
                 shlex.split(cmd),
@@ -205,7 +205,7 @@ class VideoManagement:
             )
         except subprocess.CalledProcessError as e:
             logger.error(
-                f"Ffmpeg make storyboard with file '{frame_path}' end with error: {e.stderr.strip()}"
+                f"Ffmpeg make storyboard with file '{segment_path}' end with error: {e.stderr.strip()}"
             )
             raise
 
@@ -285,7 +285,7 @@ class VideoManagement:
         with open(input_txt_path, "w") as f:
             for frame in frame_files:
                 frame_path = os.path.join(frames_dir, frame)
-                f.write(f"file '{os.path.abspath(frame_path)}'")
+                f.write(f"file '{os.path.abspath(frame_path)}'\n")
 
         cmd = (
             f"ffmpeg -y -r {fps_str} -f concat -safe 0 -i {input_txt_path} "
@@ -323,3 +323,43 @@ class VideoManagement:
                 f"Audio delta: {audio_delta}. "
                 f"Video delta: {video_delta}."
             )
+
+    def get_first_picture_from_video(self, source_video: str, output_file: str):
+        cmd = (
+            f"ffmpeg -y -i {source_video} "
+            f'-vf "select=eq(n\,0)" -frames:v 1 '
+            f"-vsync vfr {output_file}"
+        )
+        try:
+            result = subprocess.run(
+                shlex.split(cmd),
+                stderr=subprocess.PIPE,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                f"Ffmpeg can not extract first picture from file: {source_video}"
+            )
+            raise
+
+    def create_video_from_segments(self, segments_dir: str, output_path: str):
+        files = sorted((f for f in os.listdir(segments_dir) if f.endswith(".mp4")))
+        concat_txt_file = os.path.join(segments_dir, "tmp.txt")
+        with open(concat_txt_file, "w") as f:
+            for video in files:
+                path = os.path.join(segments_dir, video)
+                f.write(f"file '{os.path.abspath(path)}'\n")
+        cmd = (
+            f"ffmpeg -f concat -safe 0 "
+            f"-i {concat_txt_file} -c:v h264_nvenc "
+            f"-qp 0 -rc constqp -c:a copy {output_path}"
+        )
+        try:
+            result = subprocess.run(
+                shlex.split(cmd), stderr=subprocess.PIPE, check=True
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error("Ffmpeg error can not concat segments to video")
+            raise
+        finally:
+            os.remove(concat_txt_file)
